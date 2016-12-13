@@ -32,7 +32,8 @@ def usage():
                     "-r : reference genome of the training reads\n" \
                     "-m : User can provide their own alignment file, with maf extension\n" \
                     "-b : number of bins (for development), default = 20\n" \
-                    "-o : The prefix of output file, default = 'training'\n"
+                    "-o : The prefix of output file, default = 'training'\n" \
+                    "-t : number of threads, default = 1\n"
 
     sys.stderr.write(usage_message)
 
@@ -45,6 +46,7 @@ def main(argv):
     maf_file = ''
     model_fit = True
     num_bins = 20
+    num_threads = 1
     try:
         opts, args = getopt.getopt(argv, "hi:r:o:m:b:", ["infile=", "ref=", "outfile=", "no_model_fit"])
     except getopt.GetoptError:
@@ -67,6 +69,8 @@ def main(argv):
             model_fit = False
         elif opt == "-b":
             num_bins = max(int(arg), 1)
+        elif opt == "-t":
+            num_threads = min(int(arg), 1)
         else:
             usage()
             sys.exit(1)
@@ -113,8 +117,8 @@ def main(argv):
     else:
         # Alignment
         sys.stdout.write(strftime("%Y-%m-%d %H:%M:%S") + ": Alignment with LAST\n")
-        call("lastdb ref_genome " + ref, shell=True)
-        call("lastal -a 1 ref_genome " + in_fasta + " | grep '^s ' > " + out_maf, shell=True)
+        call("lastdb -P " + num_threads + " ref_genome " + ref, shell=True)
+        call("lastal -a 1 -P " + num_threads + " ref_genome " + in_fasta + " | grep '^s ' > " + out_maf, shell=True)
 
         # get best hit and unaligned reads
         unaligned_length = get_besthit.besthit_and_unaligned(in_fasta, out_maf, outfile)
