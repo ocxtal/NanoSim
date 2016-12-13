@@ -70,7 +70,7 @@ def main(argv):
         elif opt == "-b":
             num_bins = max(int(arg), 1)
         elif opt == "-t":
-            num_threads = min(int(arg), 1)
+            num_threads = max(int(arg), 1)
         else:
             usage()
             sys.exit(1)
