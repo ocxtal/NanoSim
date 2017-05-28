@@ -26,6 +26,7 @@ except ImportError:
     sys.exit("""You need numpy!
                 install it from http://www.numpy.org/""")
 import mixed_models as mm
+from Bio import SeqIO
 
 PYTHON_VERSION = sys.version_info
 VERSION = "1.0.0"
@@ -206,25 +207,16 @@ def simulation(ref, out, dna_type, per, kmer_bias, max_l, min_l):
     seq_len = {}
 
     # Read in the reference genome
-    with open(ref, 'r') as infile:
-        for line in infile:
-            if line[0] == ">":
-                new_line = line.strip()[1:]
-                info = re.split(r'[_\s]\s*', new_line)
-                chr_name = "-".join(info)
-            else:
-                if chr_name in seq_dict:
-                    seq_dict[chr_name] += line.strip()
-                else:
-                    seq_dict[chr_name] = line.strip()
+    sequences = SeqIO.parse(open(ref, 'r'), 'fasta')
+    genome_len = 0
+    for sequence in sequences:
+        seq_dict[sequence.id] = str(sequence.seq).upper()
+        seq_len[sequence.id] = len(sequence.seq)
+        genome_len += len(sequence.seq)
 
     if len(seq_dict) > 1 and dna_type == "circular":
         sys.stderr.write("Do not choose circular if there is more than one chromosome in the genome!")
         sys.exit(1)
-
-    for key in seq_dict.keys():
-        seq_len[key] = len(seq_dict[key])
-    genome_len = sum(seq_len.values())
 
     # Change lowercase to uppercase and replace N with any base
     seq_dict = case_convert(seq_dict)
@@ -574,12 +566,16 @@ def case_convert(s_dict):
                  'D': ['A', 'G', 'T'], 'V': ['A', 'C', 'G'], 'H': ['A', 'C', 'T'], 'B': ['C', 'G', 'T'],
                  'N': ['A', 'T', 'C', 'G'], 'X': ['A', 'T', 'C', 'G']}
 
+    byte_base_code = {}
+    for k, v in base_code.items():
+	    byte_base_code[ord(k)] = v
+
     for k, v in s_dict.items():
-        up_string = v.upper()
-        for i in xrange(len(up_string)):
-            if up_string[i] in base_code:
-                up_string = up_string[:i] + random.choice(base_code[up_string[i]]) + up_string[i+1:]
-        out_dict[k] = up_string
+        b = bytearray(v.encode())
+        for i in xrange(len(b)):
+            if b[i] not in byte_base_code: continue
+            b[i] = random.choice(byte_base_code[b[i]])
+        out_dict[k] = b.decode()
 
     return out_dict
 
