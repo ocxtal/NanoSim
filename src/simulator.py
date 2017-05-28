@@ -568,7 +568,7 @@ def case_convert(s_dict):
 
     byte_base_code = {}
     for k, v in base_code.items():
-	    byte_base_code[ord(k)] = v
+	    byte_base_code[ord(k)] = map(ord, v)
 
     for k, v in s_dict.items():
         b = bytearray(v.encode())
